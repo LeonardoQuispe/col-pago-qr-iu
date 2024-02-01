@@ -36,6 +36,7 @@ namespace PagoQR_IU_Cliente
         private string IDTransaccionFinanciera;
         private string EstadoVisor;
         private AFXVisorConfig config;
+        private BitmapImage bitmapImage = null;
 
         private async Task<long> DesplegarQR(string UriServicio, string Token)
         {
@@ -123,8 +124,8 @@ namespace PagoQR_IU_Cliente
                                 lblEstado.Content = "PAGADO";
                                 lblEstado.Background = Brushes.Green;
                                 bsfImprimir.Visibility = Visibility.Visible;
-                                await AccionImprimir(true);
-
+                                bitmapImage = (BitmapImage)imaAFXVisorQR.Source;
+                                AccionImprimir(true);
                             }
                             else if (string.Compare(etResultQRTransaccionTangoImagenDTOActual.EstadoVisor, "ERROR-PAGAR", true) == 0)
                             {
@@ -313,7 +314,6 @@ namespace PagoQR_IU_Cliente
 
         private async Task AccionImprimir(bool ejecutarAccionCerrar = false)
         {
-            BitmapImage bitmapImage = (BitmapImage)imaAFXVisorQR.Source;
             AFXServicioRespuestaEntity<ResultQRConfiguracionTerminalDTOXToken> etAFXServicioRespuesta = await ObtenerQRConfiguracionTerminal(config.UriServicio, config.Token);
             if (bitmapImage != null)
             {
@@ -337,8 +337,6 @@ namespace PagoQR_IU_Cliente
 
         private void ImprimirPagina(object o, PrintPageEventArgs e)
         {
-            BitmapImage bitmapImage = (BitmapImage)imaAFXVisorQR.Source;
-
             using (MemoryStream outStream = new MemoryStream())
             {
                 BitmapEncoder enc = new BmpBitmapEncoder();
