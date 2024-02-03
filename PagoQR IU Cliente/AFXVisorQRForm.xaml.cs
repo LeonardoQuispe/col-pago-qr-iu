@@ -174,6 +174,7 @@ namespace PagoQR_IU_Cliente
             config.TiempoSegundos = int.Parse(builder.Build().GetSection("VisorConfig").GetSection("TiempoSegundos").Value);
             config.UriServicio = builder.Build().GetSection("VisorConfig").GetSection("UriServicio").Value;
             config.Token = builder.Build().GetSection("VisorConfig").GetSection("Token").Value;
+            config.Impresora = builder.Build().GetSection("VisorConfig").GetSection("Impresora").Value;
             tbiIconoTarea.Visibility = Visibility.Visible;
             this.Hide();
             ActualizarIU();
@@ -280,32 +281,32 @@ namespace PagoQR_IU_Cliente
             this.Focus();
         }
 
-        private string ObtenerImpresora(string Impresora,string CadenaConexion)
-        {
-            AKERPNetTangoClass AKERPNetTango = new AKERPNetTangoClass(CadenaConexion);
-            string PuertoImpresora = AKERPNetTango.GVA43SeleccionarPuertoImpresora(etResultQRTransaccionTangoImagenDTOActual.TipoComprobante, etResultQRTransaccionTangoImagenDTOActual.NumeroComprobante);
-            if (string.Compare(PuertoImpresora, string.Empty, true) != 0)
-            {
-                System.Management.ManagementObjectCollection moReturn;
-                System.Management.ManagementObjectSearcher moSearch;
-                moSearch = new System.Management.ManagementObjectSearcher("Select * from Win32_Printer");
-                moReturn = moSearch.Get();
+        //private string ObtenerImpresora(string Impresora,string CadenaConexion)
+        //{
+        //    AKERPNetTangoClass AKERPNetTango = new AKERPNetTangoClass(CadenaConexion);
+        //    string PuertoImpresora = AKERPNetTango.GVA43SeleccionarPuertoImpresora(etResultQRTransaccionTangoImagenDTOActual.TipoComprobante, etResultQRTransaccionTangoImagenDTOActual.NumeroComprobante);
+        //    if (string.Compare(PuertoImpresora, string.Empty, true) != 0)
+        //    {
+        //        System.Management.ManagementObjectCollection moReturn;
+        //        System.Management.ManagementObjectSearcher moSearch;
+        //        moSearch = new System.Management.ManagementObjectSearcher("Select * from Win32_Printer");
+        //        moReturn = moSearch.Get();
 
-                foreach (System.Management.ManagementObject mo in moReturn)
-                {
-                    string NombrePuerto = (string)mo["PortName"];
-                    NombrePuerto = NombrePuerto.Replace(":", "");
-                    PuertoImpresora = PuertoImpresora.Replace(":", "");
-                    if (string.Compare(NombrePuerto, PuertoImpresora, true) == 0)
-                    {
-                        Impresora = (string)mo["Name"];
-                        break;
-                    }
-                }
-            }
-            AKERPNetTango.CerrarConexion();
-            return Impresora;
-        }
+        //        foreach (System.Management.ManagementObject mo in moReturn)
+        //        {
+        //            string NombrePuerto = (string)mo["PortName"];
+        //            NombrePuerto = NombrePuerto.Replace(":", "");
+        //            PuertoImpresora = PuertoImpresora.Replace(":", "");
+        //            if (string.Compare(NombrePuerto, PuertoImpresora, true) == 0)
+        //            {
+        //                Impresora = (string)mo["Name"];
+        //                break;
+        //            }
+        //        }
+        //    }
+        //    AKERPNetTango.CerrarConexion();
+        //    return Impresora;
+        //}
 
         private void bsfImprimir_Click(object sender, RoutedEventArgs e)
         {
@@ -320,7 +321,7 @@ namespace PagoQR_IU_Cliente
                 PrintDocument pd = new PrintDocument();
                 if (etAFXServicioRespuesta.NumError == 0)
                 {
-                    pd.PrinterSettings.PrinterName = ObtenerImpresora(pd.PrinterSettings.PrinterName, etAFXServicioRespuesta.Info.CadenaConexion);
+                    pd.PrinterSettings.PrinterName = config.Impresora;
                 }
                 //Margins margenes = new Margins(0, 0, 0, 0);
                 //pd.DefaultPageSettings.Margins = margenes;
@@ -337,48 +338,21 @@ namespace PagoQR_IU_Cliente
 
         private void ImprimirPagina(object o, PrintPageEventArgs e)
         {
-            using (MemoryStream outStream = new MemoryStream())
-            {
-                BitmapEncoder enc = new BmpBitmapEncoder();
-                enc.Frames.Add(BitmapFrame.Create(bitmapImage));
-                enc.Save(outStream);
-                System.Drawing.Bitmap bitmap = new System.Drawing.Bitmap(outStream);
-
-                float AnchoNuevo =  (bitmap.Width / bitmap.HorizontalResolution);
-                float AltoNuevo = (bitmap.Height / bitmap.VerticalResolution);
-
-                //float AnchoFactor = (e.MarginBounds.Width + 150) / AnchoNuevo;
-                //float AltoFactor = (e.MarginBounds.Height + 150) / AltoNuevo;
-
-                float AnchoFactor = 170 / AnchoNuevo;
-                float AltoFactor = 170 / AltoNuevo;
-
-                if (AnchoFactor < AltoFactor)
-                {
-                    AnchoNuevo = AnchoNuevo * AnchoFactor;
-                    AltoNuevo = AltoNuevo * AnchoFactor;
-                }
-                else
-                {
-                    AnchoNuevo = AnchoNuevo * AltoFactor;
-                    AltoNuevo = AltoNuevo * AltoFactor;
-                }
-                e.Graphics.DrawImage(bitmap, 0, 0, (int)AnchoNuevo, (int)AltoNuevo);
-
-                System.Drawing.Font drawFont = new System.Drawing.Font("Arial", 10);
-                System.Drawing.SolidBrush drawBrush = new System.Drawing.SolidBrush(System.Drawing.Color.Black);
-
-                System.Drawing.StringFormat drawFormat = new System.Drawing.StringFormat();
-                drawFormat.FormatFlags = System.Drawing.StringFormatFlags.NoWrap;
-
-                String drawString = etResultQRTransaccionTangoImagenDTOActual.Nombre + " " + etResultQRTransaccionTangoImagenDTOActual.Monto.ToString("F") + " " + etResultQRTransaccionTangoImagenDTOActual.Moneda;
-                e.Graphics.DrawString(drawString, drawFont, drawBrush, 0, (int)AltoNuevo + 2, drawFormat);
-                drawString = "----";
-                e.Graphics.DrawString(drawString, drawFont, drawBrush, 0, (int)AltoNuevo + 12, drawFormat);
-
-            }
+            System.Drawing.Font drawFont = new System.Drawing.Font("Arial", 10);
+            System.Drawing.SolidBrush drawBrush = new System.Drawing.SolidBrush(System.Drawing.Color.Black);
+            System.Drawing.StringFormat drawFormat = new System.Drawing.StringFormat();
+            drawFormat.FormatFlags = System.Drawing.StringFormatFlags.NoWrap;
+            String drawString = "Comprobante PagoQR";
+            e.Graphics.DrawString(drawString, drawFont, drawBrush, 0, 2, drawFormat);
+            drawString = "Numero : " + etResultQRTransaccionTangoImagenDTOActual.NumeroComprobante + "  Monto : " + etResultQRTransaccionTangoImagenDTOActual.Monto.ToString("F") + " " + etResultQRTransaccionTangoImagenDTOActual.Moneda;
+            e.Graphics.DrawString(drawString, drawFont, drawBrush, 0, 14, drawFormat);
+            drawString = "Fecha : " + etResultQRTransaccionTangoImagenDTOActual.FechaDocGeneracionQR.ToString("dd-MM-yyyy HH:mm");
+            e.Graphics.DrawString(drawString, drawFont, drawBrush, 0, 26, drawFormat);
+            drawString = "  Terminal : " + etResultQRTransaccionTangoImagenDTOActual.Terminal;
+            e.Graphics.DrawString(drawString, drawFont, drawBrush, 0, 38, drawFormat);
+            drawString = "----";
+            e.Graphics.DrawString(drawString, drawFont, drawBrush, 0, 50, drawFormat);
         }
-
 
         private void bsfEnviarWpp_Click(object sender, RoutedEventArgs e)
         {
@@ -413,6 +387,5 @@ namespace PagoQR_IU_Cliente
                 UseShellExecute = true
             });
         }
-
     }
 }

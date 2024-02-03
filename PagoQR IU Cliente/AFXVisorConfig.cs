@@ -10,6 +10,7 @@ namespace PagoQR_IU_Cliente
     {
         public string UriServicio { get; set; }
         public string Token { get; set; }
+        public string Impresora { get; set; }
         public int TiempoSegundos { get; set; }
     }
 }
